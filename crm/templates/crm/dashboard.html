@@ -1,0 +1,83 @@
+{% extends 'crm/base.html' %}
+
+{% block title %}Dashboard - CRM{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">📊 Dashboard</h1>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">Total Contacts</h5>
+                <h2>{{ total_contacts }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Total Deals</h5>
+                <h2>{{ total_deals }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title">Total Deal Value</h5>
+                <h2>Rs {{ total_value }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Deals by Stage (Chart)</div>
+            <div class="card-body">
+                <canvas id="stageChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Deals by Stage (Table)</div>
+            <table class="table mb-0">
+                <thead>
+                    <tr><th>Stage</th><th>Count</th></tr>
+                </thead>
+                <tbody>
+                    {% for item in stage_counts %}
+                    <tr><td>{{ item.stage }}</td><td>{{ item.count }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<a href="/admin/" class="btn btn-secondary mt-4">Go to Admin Panel</a>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('stageChart');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: 'Number of Deals',
+                data: {{ chart_data|safe }},
+                backgroundColor: ['#0d6efd', '#6f42c1', '#fd7e14', '#198754', '#dc3545']
+            }]
+        },
+        options: {
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+</script>
+{% endblock %}
