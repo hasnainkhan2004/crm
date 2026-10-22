@@ -3,7 +3,8 @@ from .models import Contact, Deal
 
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
-    list_display = ('name', 'email', 'phone', 'company', 'created_at')
+    list_display = ('name', 'email', 'owner', 'phone', 'company', 'created_at')
+    list_filter = ('owner',)
     search_fields = ('name', 'email', 'company')
 
 

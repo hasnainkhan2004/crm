@@ -1,0 +1,32 @@
+{% extends 'crm/auth_base.html' %}
+
+{% block title %}Create account - MyCRM{% endblock %}
+{% block heading %}Create your account{% endblock %}
+{% block subheading %}Get started with a private workspace for your CRM data.{% endblock %}
+
+{% block content %}
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+        {% for field in form %}
+            <div class="mb-3">
+                <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                    <div class="form-text">{{ field.help_text|safe }}</div>
+                {% endif %}
+                {% for error in field.errors %}
+                    <div class="form-text text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary btn-lg w-100 mt-2">Create account</button>
+    </form>
+    <p class="text-center text-secondary mt-4 mb-0">
+        Already have an account? <a href="{% url 'login' %}" class="fw-semibold text-decoration-none">Sign in</a>
+    </p>
+{% endblock %}
