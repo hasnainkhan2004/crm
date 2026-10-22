@@ -1,4 +1,4 @@
-# MyCRM
+# CRM
 
 A customer relationship management (CRM) web app built with Django. It helps you keep track of contacts, sales deals, and activity notes in one place.
 
