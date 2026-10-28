@@ -1,0 +1,22 @@
+.navbar-brand .brand-wordmark {
+    display: inline-block;
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    line-height: 1;
+    text-transform: uppercase;
+    vertical-align: baseline;
+    background: linear-gradient(90deg, #6366F1 0%, #14B8A6 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transition: filter 150ms ease, letter-spacing 150ms ease;
+}
+
+.navbar-brand:hover .brand-wordmark,
+.navbar-brand:focus-visible .brand-wordmark {
+    filter: brightness(1.12);
+    letter-spacing: 0.19em;
+}

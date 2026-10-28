@@ -1,0 +1,91 @@
+{% extends 'crm/base.html' %}
+{% load crm_extras %}
+
+{% block title %}Companies{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Companies</h1>
+    <a href="{% url 'company_add' %}" class="btn btn-primary">+ Add Company</a>
+</div>
+
+<form method="get" class="card card-body mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-5">
+            <label for="{{ filter_form.q.id_for_label }}" class="form-label">Search</label>
+            {{ filter_form.q }}
+        </div>
+        <div class="col-md-3">
+            <label for="{{ filter_form.industry.id_for_label }}" class="form-label">Industry</label>
+            {{ filter_form.industry }}
+        </div>
+        <div class="col-md-2">
+            <label for="{{ filter_form.sort.id_for_label }}" class="form-label">Sort by</label>
+            {{ filter_form.sort }}
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Apply</button>
+            <a href="{% url 'company_list' %}" class="btn btn-outline-secondary">Clear</a>
+        </div>
+    </div>
+    {% for field in filter_form %}
+        {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+    {% endfor %}
+</form>
+
+<p class="text-muted">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ paginator.count }} results</p>
+
+{% if page_obj.object_list %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Company</th>
+                        <th>Industry</th>
+                        <th>City</th>
+                        <th>Contacts</th>
+                        <th>Deals</th>
+                        <th>Total deal value</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for company in page_obj.object_list %}
+                    <tr>
+                        <td><a href="{% url 'company_detail' company.pk %}">{{ company.name }}</a></td>
+                        <td>{{ company.get_industry_display|default:"—" }}</td>
+                        <td>{{ company.city|default:"—" }}</td>
+                        <td>{{ company.contact_count }}</td>
+                        <td>{{ company.deal_count }}</td>
+                        <td>
+                            {% for total in company.currency_totals %}
+                                {% if not forloop.first %} + {% endif %}{{ total.value|display_currency:total.currency }}
+                            {% empty %}—{% endfor %}
+                        </td>
+                        <td class="text-nowrap">
+                            <a href="{% url 'company_detail' company.pk %}" class="btn btn-sm btn-outline-secondary">View</a>
+                            <a href="{% url 'company_edit' company.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a href="{% url 'company_delete' company.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% include 'crm/includes/pagination.html' %}
+{% else %}
+    <div class="card p-5 text-center">
+        {% if has_companies and has_filters %}
+            <h2 class="h4">No results match your search</h2>
+            <p class="text-muted">Try changing your search or clearing the filters.</p>
+            <a href="{% url 'company_list' %}" class="btn btn-outline-secondary align-self-center">Clear filters</a>
+        {% else %}
+            <h2 class="h4">No companies yet</h2>
+            <p class="text-muted">Create a company to organize your contacts.</p>
+            <a href="{% url 'company_add' %}" class="btn btn-primary align-self-center">Add your first company</a>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

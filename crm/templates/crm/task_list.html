@@ -1,0 +1,94 @@
+{% extends 'crm/base.html' %}
+
+{% block title %}Tasks{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Tasks</h1>
+    <a href="{% url 'task_add' %}" class="btn btn-primary">+ Add Task</a>
+</div>
+
+<ul class="nav nav-tabs mb-3">
+    {% for tab_key, tab_label in tabs %}
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == tab_key %}active{% endif %}"
+               href="{% querystring tab=tab_key page=None %}">{{ tab_label }}</a>
+        </li>
+    {% endfor %}
+</ul>
+
+<p class="text-muted">
+    Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ paginator.count }} tasks
+</p>
+
+{% if page_obj.object_list %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Contact / Deal</th>
+                        <th>Due date</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in page_obj.object_list %}
+                    <tr class="{% if task.is_overdue %}table-danger{% endif %}">
+                        <td>
+                            <strong>{{ task.title }}</strong>
+                            {% if task.description %}<div class="small text-muted">{{ task.description|truncatewords:12 }}</div>{% endif %}
+                        </td>
+                        <td>
+                            {% if task.contact %}<a href="{% url 'contact_detail' task.contact.pk %}">{{ task.contact.name }}</a>{% endif %}
+                            {% if task.deal %}
+                                <div><a href="{% url 'deal_detail' task.deal.pk %}">{{ task.deal.title }}</a></div>
+                            {% endif %}
+                            {% if not task.contact and not task.deal %}—{% endif %}
+                        </td>
+                        <td class="{% if task.is_overdue %}text-danger fw-bold{% endif %}">{{ task.due_date|date:"d M Y, h:i A" }}</td>
+                        <td>
+                            <span class="badge bg-{% if task.priority == 'low' %}secondary{% elif task.priority == 'medium' %}warning text-dark{% else %}danger{% endif %}">
+                                {{ task.get_priority_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{% if task.status == 'completed' %}success{% else %}primary{% endif %}">
+                                {{ task.get_status_display }}
+                            </span>
+                            {% if task.is_overdue %}<span class="badge bg-danger">Overdue</span>{% endif %}
+                        </td>
+                        <td class="text-nowrap">
+                            <a href="{% url 'task_edit' task.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a href="{% url 'task_delete' task.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-outline-danger">Delete</a>
+                            <form method="post" action="{% url 'task_toggle_complete' task.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="btn btn-sm btn-outline-success">
+                                    {% if task.status == 'pending' %}Complete{% else %}Reopen{% endif %}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% include 'crm/includes/pagination.html' %}
+{% else %}
+    <div class="card p-5 text-center">
+        {% if has_any_tasks %}
+            <h2 class="h4">No {{ active_tab }} tasks</h2>
+            <p class="text-muted">There are no tasks in this view.</p>
+        {% else %}
+            <h2 class="h4">No tasks yet</h2>
+            <p class="text-muted">Create a task to keep track of follow-ups and reminders.</p>
+            <a href="{% url 'task_add' %}" class="btn btn-primary align-self-center">Add your first task</a>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

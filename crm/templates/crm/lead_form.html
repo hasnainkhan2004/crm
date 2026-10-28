@@ -1,0 +1,12 @@
+{% extends 'crm/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4"><h1>{{ title }}</h1><a class="btn btn-secondary" href="{% url 'lead_list' %}">← Back to Leads</a></div>
+<div class="card card-body"><form method="post" novalidate>{% csrf_token %}
+<div class="row g-3">
+{% for field in form %}<div class="{% if field.name == 'notes' %}col-12{% else %}col-md-6{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}
+</div><div class="mt-4 d-flex gap-2"><button type="submit" class="btn btn-primary">Save Lead</button><a class="btn btn-outline-secondary" href="{% url 'lead_list' %}">Cancel</a></div>
+</form></div>
+{% endblock %}

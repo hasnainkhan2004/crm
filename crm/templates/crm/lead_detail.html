@@ -1,0 +1,15 @@
+{% extends 'crm/base.html' %}
+{% load crm_extras %}
+
+{% block title %}{{ lead.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3"><a href="{% url 'lead_list' %}" class="btn btn-secondary">← Back to Leads</a><div>{% if lead.status != 'converted' %}<a href="{% url 'lead_edit' lead.pk %}" class="btn btn-outline-primary">Edit</a>{% endif %}<a href="{% url 'lead_delete' lead.pk %}" class="btn btn-outline-danger">Delete</a></div></div>
+<div class="card p-4 mb-4"><div class="d-flex justify-content-between"><div><h1 class="h2">{{ lead.name }}</h1><p class="mb-1">📧 {{ lead.email|default:'—' }}</p><p class="mb-1">📞 {{ lead.phone|default:'—' }}</p><p class="mb-1">🏢 {{ lead.company_name|default:'—' }}</p><p class="mb-1">{{ lead.job_title|default:'—' }}</p><p class="mb-0">Source: {{ lead.get_source_display }}</p></div><span class="badge align-self-start bg-{{ lead.status|lead_status_badge_class }}">{{ lead.get_status_display }}</span></div>
+<p class="mt-3 mb-1">Estimated value: {% if lead.estimated_value != None %}{{ lead.estimated_value|display_currency:lead.currency }}{% else %}—{% endif %}</p>
+{% if lead.notes %}<p class="mt-3 mb-0"><strong>Notes</strong><br>{{ lead.notes|linebreaksbr }}</p>{% endif %}</div>
+
+{% if lead.status == 'converted' %}<div class="alert alert-success">Converted on {{ lead.converted_at|date:"d M Y, h:i A" }} — <a href="{% url 'contact_detail' lead.converted_contact_id %}">View contact {{ lead.converted_contact.name }}</a></div>{% else %}
+<div class="card p-4 mb-4"><h2 class="h5">Quick status change</h2><div class="d-flex flex-wrap gap-2"><form method="post" action="{% url 'lead_status' lead.pk %}" class="d-inline">{% csrf_token %}{% for value,label in lead.STATUS_CHOICES %}{% if value != 'converted' %}<button name="status" value="{{ value }}" class="btn btn-sm {% if lead.status == value %}btn-primary{% else %}btn-outline-primary{% endif %}">{{ label }}</button>{% endif %}{% endfor %}</form></div></div>
+<div class="card p-4 mb-4 border-success"><h2 class="h5">Ready to convert?</h2><p class="text-muted mb-3">Create a contact{% if lead.company_name %}, company{% endif %}{% if lead.estimated_value != None %} and optionally a deal{% else %} and optionally a deal{% endif %}.</p><a href="{% url 'lead_convert' lead.pk %}" class="btn btn-success">Convert to Contact</a></div>{% endif %}
+{% endblock %}

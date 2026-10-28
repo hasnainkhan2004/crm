@@ -1,37 +1,82 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Deals - CRM</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-    <div class="container py-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Deals</h1>
-            <div>
-                <a href="/" class="btn btn-secondary">Dashboard</a>
-                <a href="{% url 'deal_add' %}" class="btn btn-primary">+ Add Deal</a>
-            </div>
+{% extends 'crm/base.html' %}
+{% load crm_extras %}
+
+{% block title %}Deals{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Deals</h1>
+    <div class="d-flex gap-2">
+        <div class="btn-group" role="group" aria-label="Deal views">
+            <a href="{% url 'deal_list' %}{% if board_query %}?{{ board_query }}{% endif %}" class="btn btn-primary">List</a>
+            <a href="{% url 'deal_board' %}{% if board_query %}?{{ board_query }}{% endif %}" class="btn btn-outline-primary">Board</a>
         </div>
+        {% if has_contacts %}
+            <a href="{% url 'deal_add' %}" class="btn btn-primary">+ Add Deal</a>
+        {% endif %}
+    </div>
+</div>
 
-        <form method="get" class="mb-4 row g-2">
-            <div class="col-md-6">
-                <input type="text" name="q" class="form-control" placeholder="Search by title..." value="{{ query }}">
-            </div>
-            <div class="col-md-4">
-                <select name="stage" class="form-select">
-                    <option value="">All Stages</option>
-                    {% for value, label in stage_choices %}
-                        <option value="{{ value }}" {% if stage_filter == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-outline-secondary w-100" type="submit">Filter</button>
-            </div>
-        </form>
+<form method="get" class="card card-body mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label for="{{ filter_form.q.id_for_label }}" class="form-label">Search</label>
+            {{ filter_form.q }}
+        </div>
+        <div class="col-md-2">
+            <label for="{{ filter_form.stage.id_for_label }}" class="form-label">Stage</label>
+            {{ filter_form.stage }}
+        </div>
+        <div class="col-md-2">
+            <label for="{{ filter_form.currency.id_for_label }}" class="form-label">Currency</label>
+            {{ filter_form.currency }}
+        </div>
+        <div class="col-md-2">
+            <label for="{{ filter_form.min_value.id_for_label }}" class="form-label">Min value</label>
+            {{ filter_form.min_value }}
+        </div>
+        <div class="col-md-2">
+            <label for="{{ filter_form.max_value.id_for_label }}" class="form-label">Max value</label>
+            {{ filter_form.max_value }}
+        </div>
+        <div class="col-md-3">
+            <label for="{{ filter_form.sort.id_for_label }}" class="form-label">Sort by</label>
+            {{ filter_form.sort }}
+        </div>
+        <div class="col-md-9 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Apply</button>
+            <a href="{% url 'deal_list' %}" class="btn btn-outline-secondary">Clear</a>
+        </div>
+    </div>
+    {% for field in filter_form %}
+        {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+    {% endfor %}
+</form>
 
-        <div class="card">
+{% if not has_contacts %}
+    <div class="alert alert-info">
+        Add a contact before creating a deal.
+        <a href="{% url 'contact_add' %}" class="alert-link">Add a contact</a>.
+    </div>
+{% endif %}
+
+<p class="text-muted">
+    Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ paginator.count }} results
+</p>
+
+{% if page_obj.object_list %}
+    <div class="card card-body mb-3">
+        <strong>Filtered results: {{ paginator.count }} deal{{ paginator.count|pluralize }}</strong>
+        <div>
+            {% for total in filtered_value_totals %}
+                {% if not forloop.first %} + {% endif %}{{ total.total|display_currency:total.currency }}
+            {% empty %}
+                Total value: —
+            {% endfor %}
+        </div>
+    </div>
+    <div class="card">
+        <div class="table-responsive">
             <table class="table mb-0">
                 <thead>
                     <tr>
@@ -39,29 +84,48 @@
                         <th>Contact</th>
                         <th>Stage</th>
                         <th>Value</th>
+                        <th>Created at</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for deal in deals %}
+                    {% for deal in page_obj.object_list %}
                     <tr>
-                        <td>{{ deal.title }}</td>
-                        <td>{{ deal.contact.name }}</td>
-                        <td>
-                            <span class="badge bg-info text-dark">{{ deal.get_stage_display }}</span>
-                        </td>
-                        <td>Rs {{ deal.value }}</td>
-                        <td>
+                        <td><a href="{% url 'deal_detail' deal.pk %}">{{ deal.title }}</a></td>
+                        <td><a href="{% url 'contact_detail' deal.contact.pk %}">{{ deal.contact.name }}</a></td>
+                        <td>{% include 'crm/includes/stage_badge.html' with stage=deal.stage stage_label=deal.get_stage_display %}</td>
+                        <td>{{ deal.value|display_currency:deal.currency }}</td>
+                        <td>{{ deal.created_at|date:"d M Y, h:i A" }}</td>
+                        <td class="text-nowrap">
+                            <a href="{% url 'deal_detail' deal.pk %}" class="btn btn-sm btn-outline-secondary">View</a>
                             <a href="{% url 'deal_edit' deal.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
                             <a href="{% url 'deal_delete' deal.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
                         </td>
                     </tr>
-                    {% empty %}
-                    <tr><td colspan="5" class="text-center py-4">No deals yet.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
-</body>
-</html>
+    {% include 'crm/includes/pagination.html' %}
+{% else %}
+    <div class="card p-5 text-center">
+        {% if has_any_deals and has_filters %}
+            <h2 class="h4">No results match your search</h2>
+            <p class="text-muted">Try changing your search or clearing the filters.</p>
+            <a href="{% url 'deal_list' %}" class="btn btn-outline-secondary align-self-center">Clear filters</a>
+        {% else %}
+            <h2 class="h4">No deals yet</h2>
+            <p class="text-muted">Create a deal to track your sales pipeline.</p>
+            {% if has_contacts %}
+                <a href="{% url 'deal_add' %}" class="btn btn-primary align-self-center">Add your first deal</a>
+            {% else %}
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="{% url 'deal_add' %}" class="btn btn-primary">Add your first deal</a>
+                    <a href="{% url 'contact_add' %}" class="btn btn-outline-primary">Add your first contact</a>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

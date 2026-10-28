@@ -1,0 +1,18 @@
+{% extends 'crm/base.html' %}
+
+{% block title %}Delete Company{% endblock %}
+
+{% block content %}
+<div class="card p-4" style="max-width: 700px;">
+    <h1 class="h3 mb-3 text-danger">Delete Company?</h1>
+    <p>Are you sure you want to delete <strong>{{ company.name }}</strong>?</p>
+    <p class="alert alert-warning mb-3">
+        {{ contact_count }} contact{{ contact_count|pluralize }} will be unlinked from this company. Contacts and their deals will not be deleted.
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+        <a href="{% url 'company_detail' company.pk %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

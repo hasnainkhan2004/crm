@@ -1,0 +1,88 @@
+{% extends 'crm/base.html' %}
+{% load crm_extras %}
+
+{% block title %}{{ company.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <a href="{% url 'company_list' %}" class="btn btn-secondary">← Back to Companies</a>
+    <div>
+        <a href="{% url 'company_edit' company.pk %}" class="btn btn-outline-primary">Edit</a>
+        <a href="{% url 'company_delete' company.pk %}" class="btn btn-outline-danger">Delete</a>
+    </div>
+</div>
+
+<div class="card p-4 mb-4">
+    <h1 class="h2">{{ company.name }}</h1>
+    <div class="row">
+        <div class="col-md-6">
+            <p class="mb-2"><strong>Industry:</strong> {{ company.get_industry_display|default:"—" }}</p>
+            <p class="mb-2"><strong>Website:</strong> {% if company.website %}<a href="{{ company.website }}" target="_blank" rel="noopener">{{ company.website }}</a>{% else %}—{% endif %}</p>
+            <p class="mb-2"><strong>Email:</strong> {{ company.email|default:"—" }}</p>
+            <p class="mb-2"><strong>Phone:</strong> {{ company.phone|default:"—" }}</p>
+        </div>
+        <div class="col-md-6">
+            <p class="mb-2"><strong>Address:</strong> {{ company.address|default:"—"|linebreaksbr }}</p>
+            <p class="mb-2"><strong>City:</strong> {{ company.city|default:"—" }}</p>
+            <p class="mb-2"><strong>Country:</strong> {{ company.country|default:"—" }}</p>
+            {% if company.notes %}<p class="mb-0"><strong>Notes:</strong> {{ company.notes|linebreaksbr }}</p>{% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card p-4 mb-4">
+    <h2 class="h4">Summary</h2>
+    <p class="mb-2"><strong>Total deals:</strong> {{ total_deals }}</p>
+    <p class="mb-2">
+        <strong>Open pipeline:</strong>
+        {% for total in total_open_pipeline %}
+            {% if not forloop.first %} + {% endif %}{{ total.value|display_currency:total.currency }}
+        {% empty %}—{% endfor %}
+    </p>
+    <p class="mb-0">
+        <strong>Won revenue:</strong>
+        {% for total in total_won_revenue %}
+            {% if not forloop.first %} + {% endif %}{{ total.value|display_currency:total.currency }}
+        {% empty %}—{% endfor %}
+    </p>
+</div>
+
+<div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">Contacts</h2>
+        <a href="{% url 'contact_add' %}?company={{ company.pk }}" class="btn btn-sm btn-primary">Add contact</a>
+    </div>
+    {% for contact in contacts %}
+        <p class="mb-2"><a href="{% url 'contact_detail' contact.pk %}">{{ contact.name }}</a> — {{ contact.email }}</p>
+    {% empty %}
+        <p class="text-muted mb-0">No contacts for this company yet.</p>
+    {% endfor %}
+</div>
+
+<div class="card p-4 mb-4">
+    <h2 class="h4">Deals</h2>
+    {% for deal in deals %}
+        <p class="mb-2">
+            <a href="{% url 'deal_detail' deal.pk %}">{{ deal.title }}</a> —
+            <a href="{% url 'contact_detail' deal.contact_id %}">{{ deal.contact.name }}</a> —
+            {% include 'crm/includes/stage_badge.html' with stage=deal.stage stage_label=deal.get_stage_display %} —
+            {{ deal.value|display_currency:deal.currency }}
+        </p>
+    {% empty %}
+        <p class="text-muted mb-0">No deals for this company yet.</p>
+    {% endfor %}
+</div>
+
+<div class="card p-4 mb-4">
+    <h2 class="h4">Open Tasks</h2>
+    {% for task in company_tasks %}
+        <p class="mb-2">
+            <strong>{{ task.title }}</strong> — due {{ task.due_date|date:"d M Y, h:i A" }}
+            {% if task.contact %} — <a href="{% url 'contact_detail' task.contact_id %}">{{ task.contact.name }}</a>{% endif %}
+            {% if task.deal %} — <a href="{% url 'deal_detail' task.deal_id %}">{{ task.deal.title }}</a>{% endif %}
+        </p>
+    {% empty %}
+        <p class="text-muted mb-0">No open tasks for this company's contacts.</p>
+    {% endfor %}
+</div>
+{% endblock %}

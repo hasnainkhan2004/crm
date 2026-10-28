@@ -1,12 +1,13 @@
 {% extends 'crm/base.html' %}
 
-{% block title %}Dashboard - CRM{% endblock %}
+{% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">📊 Dashboard</h1>
+{% load crm_extras %}
+<h1 class="mb-4">Dashboard</h1>
 
-<div class="row mb-4">
-    <div class="col-md-4">
+<div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+    <div class="col">
         <div class="card text-white bg-primary">
             <div class="card-body">
                 <h5 class="card-title">Total Contacts</h5>
@@ -14,7 +15,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col">
         <div class="card text-white bg-success">
             <div class="card-body">
                 <h5 class="card-title">Total Deals</h5>
@@ -22,14 +23,90 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col">
         <div class="card text-white bg-warning">
             <div class="card-body">
-                <h5 class="card-title">Total Deal Value</h5>
-                <h2>Rs {{ total_value }}</h2>
+                <h5 class="card-title">Open Pipeline Value</h5>
+                <h2>
+                    {% for total in open_pipeline_values %}
+                        {% if not forloop.first %} + {% endif %}{{ total.value|display_currency:total.currency }}
+                    {% empty %}—{% endfor %}
+                </h2>
             </div>
         </div>
     </div>
+    <div class="col">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Won Revenue</h5>
+                <h2>
+                    {% for total in won_revenue_values %}
+                        {% if not forloop.first %} + {% endif %}{{ total.value|display_currency:total.currency }}
+                    {% empty %}—{% endfor %}
+                </h2>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card text-white bg-danger">
+            <div class="card-body">
+                <h5 class="card-title">Lost Value</h5>
+                <h2>
+                    {% for total in lost_values %}
+                        {% if not forloop.first %} + {% endif %}{{ total.value|display_currency:total.currency }}
+                    {% empty %}—{% endfor %}
+                </h2>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5 class="card-title">Win Rate %</h5>
+                <h2>{{ win_rate }}%</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">Leads</h2>
+        <a href="{% url 'lead_list' %}" class="btn btn-sm btn-outline-primary">View all leads</a>
+    </div>
+    <div class="row row-cols-1 row-cols-md-3 g-3">
+        <div class="col"><div class="border rounded p-3"><div class="text-muted">New leads</div><div class="h3 mb-0">{{ new_leads }}</div></div></div>
+        <div class="col"><div class="border rounded p-3"><div class="text-muted">Qualified</div><div class="h3 mb-0">{{ qualified_leads }}</div></div></div>
+        <div class="col"><div class="border rounded p-3"><div class="text-muted">Conversion rate</div><div class="h3 mb-0">{{ conversion_rate }}%</div></div></div>
+    </div>
+</div>
+
+<div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">Recent activity</h2>
+        <a href="{% url 'contact_list' %}" class="btn btn-sm btn-outline-primary">View contacts</a>
+    </div>
+    {% for event in recent_activity %}
+        <div class="d-flex gap-3 border-bottom py-2">
+            <span class="badge bg-{{ event.color }} align-self-start" aria-hidden="true"><i class="bi bi-{{ event.icon }}"></i></span>
+            <div class="flex-grow-1"><a href="{{ event.url }}" class="fw-semibold text-decoration-none">{{ event.title }}</a><div class="text-muted small">{{ event.description }}</div></div>
+            <time class="text-muted small" title="{{ event.timestamp|date:'d M Y, h:i A' }}">{{ event.timestamp|timesince }} ago</time>
+        </div>
+    {% empty %}
+        <p class="text-muted mb-0">No recent activity yet.</p>
+    {% endfor %}
+</div>
+
+<div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">Today's Tasks &amp; Overdue</h2>
+        <a href="{% url 'task_list' %}" class="btn btn-sm btn-outline-primary">View all tasks</a>
+    </div>
+    {% for task in dashboard_tasks %}
+        {% include 'crm/includes/task_row.html' with task=task show_toggle=True next_url=request.path %}
+    {% empty %}
+        <p class="text-muted mb-0">No tasks due today or overdue.</p>
+    {% endfor %}
 </div>
 
 <div class="row">
@@ -49,8 +126,11 @@
                     <tr><th>Stage</th><th>Count</th></tr>
                 </thead>
                 <tbody>
-                    {% for item in stage_counts %}
-                    <tr><td>{{ item.stage }}</td><td>{{ item.count }}</td></tr>
+                    {% for item in stage_rows %}
+                    <tr>
+                        <td>{% include 'crm/includes/stage_badge.html' with stage=item.value stage_label=item.label %}</td>
+                        <td>{{ item.count }}</td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -58,7 +138,6 @@
     </div>
 </div>
 
-<a href="/admin/" class="btn btn-secondary mt-4">Go to Admin Panel</a>
 {% endblock %}
 
 {% block extra_scripts %}

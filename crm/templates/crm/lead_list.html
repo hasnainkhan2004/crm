@@ -1,0 +1,45 @@
+{% extends 'crm/base.html' %}
+{% load crm_extras %}
+
+{% block title %}Leads{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Leads</h1>
+    <a href="{% url 'lead_add' %}" class="btn btn-primary">+ Add Lead</a>
+</div>
+
+<div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+    <div class="col"><div class="card card-body"><div class="text-muted">Total leads</div><strong class="h3 mb-0">{{ total_leads }}</strong></div></div>
+    <div class="col"><div class="card card-body"><div class="text-muted">Qualified</div><strong class="h3 mb-0">{{ qualified_leads }}</strong></div></div>
+    <div class="col"><div class="card card-body"><div class="text-muted">Converted</div><strong class="h3 mb-0">{{ converted_leads }}</strong></div></div>
+    <div class="col"><div class="card card-body"><div class="text-muted">Conversion rate</div><strong class="h3 mb-0">{{ conversion_rate }}%</strong></div></div>
+</div>
+
+<form method="get" class="card card-body mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4"><label class="form-label" for="{{ filter_form.q.id_for_label }}">Search</label>{{ filter_form.q }}</div>
+        <div class="col-md-2"><label class="form-label" for="{{ filter_form.status.id_for_label }}">Status</label>{{ filter_form.status }}</div>
+        <div class="col-md-2"><label class="form-label" for="{{ filter_form.source.id_for_label }}">Source</label>{{ filter_form.source }}</div>
+        <div class="col-md-2"><label class="form-label" for="{{ filter_form.sort.id_for_label }}">Sort by</label>{{ filter_form.sort }}</div>
+        <div class="col-md-2 d-flex gap-2"><button type="submit" class="btn btn-primary">Search</button><a href="{% url 'lead_list' %}" class="btn btn-outline-secondary">Clear</a></div>
+    </div>
+    {% for field in filter_form %}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}{% endfor %}
+</form>
+
+<p class="text-muted">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ paginator.count }} results</p>
+{% if page_obj.object_list %}
+<div class="card table-responsive">
+<table class="table mb-0"><thead><tr><th>Name</th><th>Company</th><th>Status</th><th>Source</th><th>Est. value</th><th>Created</th><th>Actions</th></tr></thead>
+<tbody>{% for lead in page_obj.object_list %}<tr>
+<td><a href="{% url 'lead_detail' lead.pk %}">{{ lead.name }}</a></td><td>{{ lead.company_name|default:'—' }}</td>
+<td><span class="badge bg-{{ lead.status|lead_status_badge_class }}">{{ lead.get_status_display }}</span></td>
+<td>{{ lead.get_source_display }}</td><td>{% if lead.estimated_value != None %}{{ lead.estimated_value|display_currency:lead.currency }}{% else %}—{% endif %}</td>
+<td>{{ lead.created_at|date:"d M Y" }}</td><td class="text-nowrap"><a class="btn btn-sm btn-outline-secondary" href="{% url 'lead_detail' lead.pk %}">View</a>{% if lead.status != 'converted' %}<a class="btn btn-sm btn-outline-primary" href="{% url 'lead_edit' lead.pk %}">Edit</a>{% endif %}</td>
+</tr>{% endfor %}</tbody></table>
+</div>
+{% include 'crm/includes/pagination.html' %}
+{% else %}
+<div class="card p-5 text-center">{% if has_any_leads and has_filters %}<h2 class="h4">No leads match your filters</h2><a class="btn btn-outline-secondary" href="{% url 'lead_list' %}">Clear filters</a>{% else %}<h2 class="h4">No leads yet</h2><p class="text-muted">Add a lead to start tracking prospects.</p><a class="btn btn-primary" href="{% url 'lead_add' %}">Add your first lead</a>{% endif %}</div>
+{% endif %}
+{% endblock %}

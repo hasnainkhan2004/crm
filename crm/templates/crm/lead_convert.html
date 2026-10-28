@@ -1,0 +1,16 @@
+{% extends 'crm/base.html' %}
+
+{% block title %}Convert {{ lead.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-3"><a href="{% url 'lead_detail' lead.pk %}" class="btn btn-secondary">← Back to Lead</a></div>
+<h1 class="h2 mb-4">Convert Lead</h1>
+<div class="row g-4"><div class="col-md-7"><div class="card p-4"><form method="post" novalidate>{% csrf_token %}
+{% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+<div class="form-check mb-3"><input type="checkbox" name="create_deal" id="id_create_deal" class="form-check-input" {% if form.create_deal.value %}checked{% endif %}><label for="id_create_deal" class="form-check-label">Create a deal</label></div>
+<div class="mb-3"><label class="form-label" for="{{ form.deal_title.id_for_label }}">Deal title</label>{{ form.deal_title }}{{ form.deal_title.errors }}</div>
+<div class="row"><div class="col-md-6 mb-3"><label class="form-label" for="{{ form.deal_value.id_for_label }}">Deal value</label>{{ form.deal_value }}{{ form.deal_value.errors }}</div><div class="col-md-6 mb-3"><label class="form-label" for="{{ form.deal_stage.id_for_label }}">Deal stage</label>{{ form.deal_stage }}{{ form.deal_stage.errors }}</div></div>
+{% if preview_company_name %}<div class="form-check mb-3"><input type="checkbox" name="create_company" id="id_create_company" class="form-check-input" {% if form.create_company.value %}checked{% endif %}><label for="id_create_company" class="form-check-label">Create or reuse company “{{ preview_company_name }}”</label></div>{% endif %}
+<button type="submit" class="btn btn-success">Confirm Conversion</button><a href="{% url 'lead_detail' lead.pk %}" class="btn btn-outline-secondary">Cancel</a></form></div></div>
+<div class="col-md-5"><div class="card p-4"><h2 class="h5">Conversion preview</h2><ul class="mb-0"><li>Contact: <strong>{{ lead.name }}</strong>{% if lead.email %} ({{ lead.email }}){% endif %}</li>{% if preview_company_name %}<li>Company: <strong>{{ preview_company_name }}</strong> (only if selected)</li>{% endif %}<li>Deal: <strong>selected above</strong> (optional)</li>{% if lead.notes %}<li>A note containing the lead notes</li>{% endif %}</ul></div></div></div>
+{% endblock %}

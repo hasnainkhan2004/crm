@@ -1,0 +1,51 @@
+{% load crm_extras %}
+{% if timeline.events %}
+    {% regroup timeline.events by date_group as grouped_events %}
+    {% for group in grouped_events %}
+        <div class="mb-4">
+            <div class="text-muted fw-semibold mb-3">{{ group.grouper }}</div>
+            <div class="timeline-list border-start ms-2 ps-4">
+                {% for event in group.list %}
+                    <article class="position-relative pb-4">
+                        <span class="position-absolute translate-middle rounded-circle bg-{{ event.color }} text-white d-flex align-items-center justify-content-center" style="left:-1.9rem;width:2rem;height:2rem">
+                            <i class="bi bi-{{ event.icon }}" aria-hidden="true"></i>
+                        </span>
+                        <div class="d-flex justify-content-between gap-2">
+                            <div>
+                                {% if event.url %}<h3 class="h6 mb-1"><a href="{{ event.url }}" class="text-decoration-none">{{ event.title }}</a></h3>{% else %}<h3 class="h6 mb-1">{{ event.title }}</h3>{% endif %}
+                                <div class="text-muted small">{{ event.description }}</div>
+                                {% if event.type == 'deal_created' and event.related.deal %}
+                                    <div class="mt-1">{% include 'crm/includes/stage_badge.html' with stage=event.related.deal.stage stage_label=event.related.deal.get_stage_display %} {{ event.related.deal.value|display_currency:event.related.deal.currency }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex align-items-start gap-1">
+                                {% if event.type == 'note' and event.related.note %}
+                                    <a class="btn btn-sm btn-link p-0" href="{% url 'note_edit' event.related.note.pk %}" title="Edit note" aria-label="Edit note"><i class="bi bi-pencil"></i></a>
+                                    <a class="btn btn-sm btn-link p-0 text-danger" href="{% url 'note_delete' event.related.note.pk %}" title="Delete note" aria-label="Delete note"><i class="bi bi-trash"></i></a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <time class="text-muted small" datetime="{{ event.timestamp|date:'c' }}" title="{{ event.timestamp|date:'d M Y, h:i A' }}">{{ event.timestamp|timesince }} ago</time>
+                    </article>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+    {% if timeline.has_more %}
+        <div class="text-center" data-load-more-wrap>
+            <button class="btn btn-outline-primary" data-load-more data-timeline-type="{{ timeline_type }}" data-before="{{ timeline.next_cursor }}">Load more</button>
+        </div>
+    {% else %}
+        <p class="text-muted text-center mb-0">You’re all caught up.</p>
+    {% endif %}
+{% else %}
+    <div class="text-center py-5">
+        <h3 class="h5">No activity yet</h3>
+        <p class="text-muted">Start the relationship by adding an update or task.</p>
+        <div class="d-flex justify-content-center gap-2">
+            <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#quickNote">Add note</button>
+            <a class="btn btn-outline-primary" href="{{ contact_task_add_url|default:request.path }}">Add task</a>
+            <a class="btn btn-outline-primary" href="{% url 'deal_add' %}?contact={{ contact.pk }}">Add deal</a>
+        </div>
+    </div>
+{% endif %}

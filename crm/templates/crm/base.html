@@ -3,19 +3,39 @@
 <head>
     <title>{% block title %}CRM{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    {% load static %}
+    <link href="{% static 'css/brand.css' %}" rel="stylesheet">
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-light">
     <nav class="navbar navbar-expand navbar-dark bg-dark px-4">
-        <a class="navbar-brand" href="{% url 'dashboard' %}">📊 MyCRM</a>
+        <a class="navbar-brand" href="{% url 'dashboard' %}"><span class="brand-wordmark">CRM</span></a>
         <div class="navbar-nav">
             <a class="nav-link text-white" href="{% url 'dashboard' %}">Dashboard</a>
-            <a class="nav-link text-white" href="{% url 'contact_list' %}">Contacts</a>
-            <a class="nav-link text-white" href="{% url 'deal_list' %}">Deals</a>
+            <a class="nav-link text-white {% if request.resolver_match.url_name == 'lead_list' or request.resolver_match.url_name == 'lead_add' or request.resolver_match.url_name == 'lead_detail' or request.resolver_match.url_name == 'lead_edit' or request.resolver_match.url_name == 'lead_delete' or request.resolver_match.url_name == 'lead_status' or request.resolver_match.url_name == 'lead_convert' %}active{% endif %}"
+               href="{% url 'lead_list' %}"
+               {% if request.resolver_match.url_name == 'lead_list' or request.resolver_match.url_name == 'lead_add' or request.resolver_match.url_name == 'lead_detail' or request.resolver_match.url_name == 'lead_edit' or request.resolver_match.url_name == 'lead_delete' or request.resolver_match.url_name == 'lead_status' or request.resolver_match.url_name == 'lead_convert' %}aria-current="page"{% endif %}>Leads</a>
+            <a class="nav-link text-white {% if request.resolver_match.url_name == 'contact_list' or request.resolver_match.url_name == 'contact_add' or request.resolver_match.url_name == 'contact_detail' or request.resolver_match.url_name == 'contact_edit' or request.resolver_match.url_name == 'contact_delete' %}active{% endif %}"
+               href="{% url 'contact_list' %}"
+               {% if request.resolver_match.url_name == 'contact_list' or request.resolver_match.url_name == 'contact_add' or request.resolver_match.url_name == 'contact_detail' or request.resolver_match.url_name == 'contact_edit' or request.resolver_match.url_name == 'contact_delete' %}aria-current="page"{% endif %}>Contacts</a>
+            <a class="nav-link text-white {% if request.resolver_match.url_name == 'company_list' or request.resolver_match.url_name == 'company_add' or request.resolver_match.url_name == 'company_detail' or request.resolver_match.url_name == 'company_edit' or request.resolver_match.url_name == 'company_delete' or request.resolver_match.url_name == 'company_quick_create' %}active{% endif %}"
+               href="{% url 'company_list' %}"
+               {% if request.resolver_match.url_name == 'company_list' or request.resolver_match.url_name == 'company_add' or request.resolver_match.url_name == 'company_detail' or request.resolver_match.url_name == 'company_edit' or request.resolver_match.url_name == 'company_delete' or request.resolver_match.url_name == 'company_quick_create' %}aria-current="page"{% endif %}>Companies</a>
+            <a class="nav-link text-white {% if request.resolver_match.url_name == 'deal_list' or request.resolver_match.url_name == 'deal_board' or request.resolver_match.url_name == 'deal_add' or request.resolver_match.url_name == 'deal_detail' or request.resolver_match.url_name == 'deal_edit' or request.resolver_match.url_name == 'deal_delete' or request.resolver_match.url_name == 'deal_move' %}active{% endif %}"
+               href="{% url 'deal_list' %}"
+               {% if request.resolver_match.url_name == 'deal_list' or request.resolver_match.url_name == 'deal_board' or request.resolver_match.url_name == 'deal_add' or request.resolver_match.url_name == 'deal_detail' or request.resolver_match.url_name == 'deal_edit' or request.resolver_match.url_name == 'deal_delete' or request.resolver_match.url_name == 'deal_move' %}aria-current="page"{% endif %}>Deals</a>
+            <a class="nav-link text-white {% if request.resolver_match.url_name == 'task_list' or request.resolver_match.url_name == 'task_add' or request.resolver_match.url_name == 'task_edit' or request.resolver_match.url_name == 'task_delete' or request.resolver_match.url_name == 'task_toggle_complete' %}active{% endif %}"
+               href="{% url 'task_list' %}"
+               {% if request.resolver_match.url_name == 'task_list' or request.resolver_match.url_name == 'task_add' or request.resolver_match.url_name == 'task_edit' or request.resolver_match.url_name == 'task_delete' or request.resolver_match.url_name == 'task_toggle_complete' %}aria-current="page"{% endif %}>
+                Tasks{% if overdue_task_count %} <span class="badge rounded-pill bg-danger">{{ overdue_task_count }}</span>{% endif %}
+            </a>
         </div>
         <div class="ms-auto">
             {% if user.is_authenticated %}
                 <span class="text-white me-3">Hi, {{ user.username }}</span>
+                {% if request.user.is_staff %}
+                    <a class="btn btn-outline-light btn-sm me-2" href="/admin/">Admin</a>
+                {% endif %}
                 <form method="post" action="{% url 'logout' %}" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-light btn-sm">Logout</button>
@@ -25,6 +45,14 @@
     </nav>
 
     <div class="container py-5">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
         {% block content %}{% endblock %}
     </div>
 

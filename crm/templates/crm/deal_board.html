@@ -1,0 +1,251 @@
+{% extends 'crm/base.html' %}
+{% load crm_extras %}
+
+{% block title %}Deals Board{% endblock %}
+
+{% block extra_head %}
+<style>
+    .deal-board-scroll { overflow-x: auto; padding-bottom: .75rem; }
+    .deal-board { display: flex; gap: 1rem; min-width: 1080px; }
+    .deal-column { flex: 1 0 205px; min-width: 205px; max-width: 330px; }
+    .deal-column-header { border-top: 4px solid; }
+    .deal-column-header.stage-new { border-color: var(--bs-secondary); }
+    .deal-column-header.stage-contacted { border-color: var(--bs-info); }
+    .deal-column-header.stage-negotiation { border-color: var(--bs-warning); }
+    .deal-column-header.stage-won { border-color: var(--bs-success); }
+    .deal-column-header.stage-lost { border-color: var(--bs-danger); }
+    .deal-column-cards { max-height: 68vh; min-height: 180px; overflow-y: auto; }
+    .deal-drop-empty { border: 2px dashed #adb5bd; border-radius: .5rem; color: #6c757d; padding: 1.5rem .75rem; text-align: center; }
+    .deal-card { cursor: grab; }
+    .deal-card:active { cursor: grabbing; }
+    .deal-card.sortable-ghost { opacity: .35; }
+    .overdue-task-dot { background: var(--bs-danger); border-radius: 50%; display: inline-block; height: .55rem; width: .55rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Deals</h1>
+    <div class="btn-group" role="group" aria-label="Deal views">
+        <a href="{% url 'deal_list' %}{% if list_query %}?{{ list_query }}{% endif %}" class="btn btn-outline-primary">List</a>
+        <a href="{% url 'deal_board' %}{% if list_query %}?{{ list_query }}{% endif %}" class="btn btn-primary">Board</a>
+    </div>
+</div>
+
+<form method="get" class="card card-body mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-6">
+            <label for="{{ filter_form.q.id_for_label }}" class="form-label">Search</label>
+            {{ filter_form.q }}
+        </div>
+        <div class="col-md-3">
+            <label for="{{ filter_form.currency.id_for_label }}" class="form-label">Currency</label>
+            {{ filter_form.currency }}
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Apply</button>
+            <a href="{% url 'deal_board' %}" class="btn btn-outline-secondary">Clear</a>
+        </div>
+    </div>
+    {% for field in filter_form %}
+        {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+    {% endfor %}
+</form>
+
+{% if not has_deals %}
+    <div class="alert alert-info">
+        No deals yet. {% if has_contacts %}<a href="{% url 'deal_add' %}" class="alert-link">Add your first deal</a>.{% else %}Add a contact before creating a deal.{% endif %}
+    </div>
+{% endif %}
+
+<div class="deal-board-scroll">
+    <div class="deal-board">
+        {% for column in columns %}
+            <section class="deal-column" aria-label="{{ column.label }} deals">
+                <header class="card card-body deal-column-header stage-{{ column.value }} mb-2">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div>
+                            <h2 class="h5 mb-1">
+                                {% include 'crm/includes/stage_badge.html' with stage=column.value stage_label=column.label %}
+                                <span class="badge rounded-pill bg-light text-dark column-count" data-count-stage="{{ column.value }}">{{ column.count }}</span>
+                            </h2>
+                            <div class="small text-muted column-total" data-total-stage="{{ column.value }}">
+                                {% for total in column.totals %}
+                                    {% if not forloop.first %} + {% endif %}{{ total.value|display_currency:total.currency }}
+                                {% empty %}
+                                    —
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% if has_contacts %}
+                            <a class="btn btn-sm btn-outline-primary text-nowrap" href="{% url 'deal_add' %}?stage={{ column.value }}">+ Add deal</a>
+                        {% else %}
+                            <a class="btn btn-sm btn-outline-primary text-nowrap" href="{% url 'contact_add' %}">+ Add contact</a>
+                        {% endif %}
+                    </div>
+                </header>
+                <div class="deal-column-cards" data-stage="{{ column.value }}">
+                    {% for deal in column.deals %}
+                        <article class="card deal-card mb-2"
+                                 data-deal-id="{{ deal.pk }}"
+                                 data-stage="{{ deal.stage }}"
+                                 data-stage-changed-at="{{ deal.stage_changed_at|date:'c' }}"
+                                 data-move-url="{% url 'deal_move' deal.pk %}">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                    <a class="fw-semibold text-decoration-none" href="{% url 'deal_detail' deal.pk %}">{{ deal.title }}</a>
+                                    {% include 'crm/includes/stage_badge.html' with stage=deal.stage stage_label=deal.get_stage_display badge_class_extra="deal-stage-badge" %}
+                                    {% if deal.has_overdue_task %}
+                                        <span class="overdue-task-dot" title="Has overdue pending tasks" aria-label="Has overdue pending tasks"></span>
+                                    {% endif %}
+                                </div>
+                                <div class="small text-muted mb-1">
+                                    <a href="{% url 'contact_detail' deal.contact_id %}" class="text-muted">{{ deal.contact.name }}</a>
+                                </div>
+                                {% if deal.contact.company %}
+                                    <div class="small text-muted mb-1"><a href="{% url 'company_detail' deal.contact.company_id %}" class="text-muted">{{ deal.contact.company.name }}</a></div>
+                                {% endif %}
+                                <div class="fw-semibold mb-1">{{ deal.value|display_currency:deal.currency }}</div>
+                                <div class="small text-muted mb-2"><span class="stage-days">{{ deal.stage_changed_at|days_in_stage }}</span> days in stage</div>
+                                <label class="form-label small mb-1" for="move-{{ deal.pk }}">Move to...</label>
+                                <select id="move-{{ deal.pk }}" class="form-select form-select-sm deal-quick-move" aria-label="Move {{ deal.title }} to another stage">
+                                    {% for stage_value, stage_label in stage_choices %}
+                                        <option value="{{ stage_value }}" {% if deal.stage == stage_value %}selected{% endif %}>{{ stage_label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </article>
+                    {% endfor %}
+                    <div class="deal-drop-empty {% if column.deals %}d-none{% endif %}">No deals</div>
+                </div>
+            </section>
+        {% endfor %}
+    </div>
+</div>
+
+<form id="deal-board-csrf-form" class="d-none">{% csrf_token %}</form>
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="deal-board-toast-container" aria-live="polite"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(() => {
+    const board = document.querySelector('.deal-board');
+    const csrfToken = document.querySelector('#deal-board-csrf-form [name="csrfmiddlewaretoken"]').value;
+    let originalParent = null;
+    let originalNextSibling = null;
+
+    function showToast(message, isError = false) {
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-bg-${isError ? 'danger' : 'success'} border-0`;
+        toast.setAttribute('role', 'status');
+        toast.innerHTML = '<div class="d-flex"><div class="toast-body"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>';
+        toast.querySelector('.toast-body').textContent = message;
+        document.getElementById('deal-board-toast-container').appendChild(toast);
+        if (window.bootstrap && window.bootstrap.Toast) {
+            const instance = new window.bootstrap.Toast(toast, { delay: 3500 });
+            toast.addEventListener('hidden.bs.toast', () => toast.remove());
+            instance.show();
+        } else {
+            toast.classList.add('show');
+            window.setTimeout(() => toast.remove(), 3500);
+        }
+    }
+
+    function updateEmptyState(column) {
+        const empty = column.querySelector('.deal-drop-empty');
+        const hasCards = column.querySelector('.deal-card') !== null;
+        empty.classList.toggle('d-none', hasCards);
+    }
+
+    function updateColumnSummary(stage, summary) {
+        const count = document.querySelector(`[data-count-stage="${stage}"]`);
+        const total = document.querySelector(`[data-total-stage="${stage}"]`);
+        if (!count || !total) return;
+        count.textContent = summary.count;
+        total.textContent = summary.totals.length
+            ? summary.totals.map(item => item.formatted).join(' + ')
+            : '—';
+    }
+
+    async function moveCard(card, target, oldParent, oldNextSibling) {
+        const previousStage = card.dataset.stage;
+        const nextStage = target.dataset.stage;
+        const formData = new FormData();
+        formData.append('stage', nextStage);
+        formData.append('q', '{{ filter_form.q.value|default_if_none:""|escapejs }}');
+        formData.append('currency', '{{ filter_form.currency.value|default_if_none:""|escapejs }}');
+        try {
+            const response = await fetch(card.dataset.moveUrl, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                body: formData,
+                credentials: 'same-origin',
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Could not move this deal.');
+
+            card.dataset.stage = result.target_stage;
+            card.dataset.stageChangedAt = result.stage_changed_at;
+            const stageBadge = card.querySelector('.deal-stage-badge');
+            stageBadge.className = `badge bg-${result.stage_badge_class} deal-stage-badge`;
+            stageBadge.textContent = result.stage_label;
+            const days = card.querySelector('.stage-days');
+            days.textContent = Math.floor(Math.max(
+                0,
+                Date.now() - new Date(result.stage_changed_at).getTime(),
+            ) / 86400000);
+            const select = card.querySelector('.deal-quick-move');
+            select.value = result.target_stage;
+            target.insertBefore(card, target.firstChild);
+            Object.entries(result.columns).forEach(([stage, summary]) => updateColumnSummary(stage, summary));
+            updateEmptyState(oldParent);
+            updateEmptyState(target);
+            showToast('Deal moved successfully.');
+        } catch (error) {
+            if (oldNextSibling && oldNextSibling.parentElement === oldParent) {
+                oldParent.insertBefore(card, oldNextSibling);
+            } else {
+                oldParent.appendChild(card);
+            }
+            card.querySelector('.deal-quick-move').value = previousStage;
+            updateEmptyState(oldParent);
+            updateEmptyState(target);
+            showToast(error.message || 'Could not move this deal.', true);
+        }
+    }
+
+    if (window.Sortable) {
+        board.querySelectorAll('.deal-column-cards').forEach(column => {
+            new window.Sortable(column, {
+                group: 'deal-pipeline',
+                animation: 150,
+                draggable: '.deal-card',
+                onStart(event) {
+                    originalParent = event.from;
+                    originalNextSibling = event.item.nextElementSibling;
+                },
+                onAdd(event) {
+                    moveCard(event.item, event.to, originalParent, originalNextSibling);
+                },
+            });
+        });
+    }
+
+    board.addEventListener('change', event => {
+        if (!event.target.matches('.deal-quick-move')) return;
+        const card = event.target.closest('.deal-card');
+        const currentColumn = card.parentElement;
+        const target = board.querySelector(`.deal-column-cards[data-stage="${event.target.value}"]`);
+        if (!target || target === currentColumn) return;
+        const oldNext = card.nextElementSibling;
+        target.insertBefore(card, target.firstChild);
+        updateEmptyState(currentColumn);
+        updateEmptyState(target);
+        moveCard(card, target, currentColumn, oldNext);
+    });
+})();
+</script>
+{% endblock %}

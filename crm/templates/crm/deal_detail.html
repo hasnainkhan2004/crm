@@ -1,0 +1,32 @@
+{% extends 'crm/base.html' %}
+{% load crm_extras %}
+
+{% block title %}{{ deal.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <a href="{% url 'deal_list' %}" class="btn btn-secondary">← Back to Deals</a>
+    <div>
+        <a href="{% url 'deal_edit' deal.pk %}" class="btn btn-outline-primary">Edit</a>
+        <a href="{% url 'deal_delete' deal.pk %}" class="btn btn-outline-danger">Delete</a>
+    </div>
+</div>
+
+<div class="card p-4">
+    <h1 class="h2">{{ deal.title }}</h1>
+    <p class="mb-2"><strong>Contact:</strong> <a href="{% url 'contact_detail' deal.contact.pk %}">{{ deal.contact.name }}</a></p>
+    <p class="mb-2"><strong>Company:</strong> {% if deal.contact.company %}<a href="{% url 'company_detail' deal.contact.company_id %}">{{ deal.contact.company.name }}</a>{% else %}—{% endif %}</p>
+    <p class="mb-2"><strong>Stage:</strong> {% include 'crm/includes/stage_badge.html' with stage=deal.stage stage_label=deal.get_stage_display %}</p>
+    <p class="mb-2"><strong>Value:</strong> {{ deal.value|display_currency:deal.currency }}</p>
+    <p class="mb-0"><strong>Created at:</strong> {{ deal.created_at|date:"d M Y, h:i A" }}</p>
+</div>
+
+{% include 'crm/includes/task_section.html' with title="Tasks" tasks=deal_tasks add_url=deal_task_add_url %}
+
+{% include 'crm/includes/notes_section.html' with notes_title="Notes" notes_count=notes_count notes=notes note_form=note_form note_add_url=note_add_url %}
+
+<div class="card p-4 mt-4">
+    <h2 class="h4">Deal timeline</h2>
+    {% include 'crm/includes/timeline_fragment.html' with timeline=deal_timeline timeline_type="all" contact=deal.contact %}
+</div>
+{% endblock %}

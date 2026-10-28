@@ -1,0 +1,19 @@
+<div class="d-flex justify-content-between align-items-center gap-3 border-top py-2 {% if task.is_overdue %}text-danger{% endif %}">
+    <div>
+        <strong>{{ task.title }}</strong>
+        <div class="small">
+            Due {{ task.due_date|date:"d M Y, h:i A" }}
+            {% if task.contact %} · {{ task.contact.name }}{% endif %}
+            {% if task.deal %} · {{ task.deal.title }}{% endif %}
+        </div>
+    </div>
+    {% if show_toggle %}
+        <form method="post" action="{% url 'task_toggle_complete' task.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next_url }}">
+            <button type="submit" class="btn btn-sm {% if task.status == 'pending' %}btn-outline-success{% else %}btn-outline-secondary{% endif %}">
+                {% if task.status == 'pending' %}Complete{% else %}Reopen{% endif %}
+            </button>
+        </form>
+    {% endif %}
+</div>
